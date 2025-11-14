@@ -23,7 +23,7 @@ def long_control_state_trans(CP, active, long_control_state, v_ego,
 
   else:
     if long_control_state == LongCtrlState.off:
-      if not starting_condition:
+      if not starting_condition and v_ego > 0:
         long_control_state = LongCtrlState.stopping
       else:
         if starting_condition and CP.startingState:

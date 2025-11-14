@@ -54,3 +54,11 @@ def test_starting():
   next_state = long_control_state_trans(CP, active, current_state, v_ego=1.0,
                              should_stop=False, brake_pressed=False, cruise_standstill=False)
   assert next_state == LongCtrlState.pid
+
+  def test_off_when_stopped(self):
+    CP = car.CarParams.new_message()
+    active = True
+    current_state = LongCtrlState.off
+    next_state = long_control_state_trans(CP, active, current_state, v_ego=0.0,
+                                           should_stop=False, brake_pressed=True, cruise_standstill=False)
+    assert next_state == LongCtrlState.off
