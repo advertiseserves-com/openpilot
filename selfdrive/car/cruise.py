@@ -29,7 +29,19 @@ CRUISE_INTERVAL_SIGN = {
 
 
 class VCruiseHelper:
+  """
+  A helper class for managing the vehicle's cruise control speed.
+
+  This class handles the logic for setting, updating, and initializing the
+  cruise control speed based on user inputs and vehicle state.
+  """
   def __init__(self, CP):
+    """
+    Initializes the VCruiseHelper class.
+
+    Args:
+      CP: The CarParams object for the current car.
+    """
     self.CP = CP
     self.v_cruise_kph = V_CRUISE_UNSET
     self.v_cruise_cluster_kph = V_CRUISE_UNSET
@@ -39,9 +51,20 @@ class VCruiseHelper:
 
   @property
   def v_cruise_initialized(self):
+    """
+    Returns True if the cruise speed has been initialized.
+    """
     return self.v_cruise_kph != V_CRUISE_UNSET
 
   def update_v_cruise(self, CS, enabled, is_metric):
+    """
+    Updates the cruise speed based on the car's state and user inputs.
+
+    Args:
+      CS: The CarState object.
+      enabled: A boolean indicating whether openpilot is enabled.
+      is_metric: A boolean indicating whether to use metric units.
+    """
     self.v_cruise_kph_last = self.v_cruise_kph
 
     if CS.cruiseState.available:
@@ -64,6 +87,14 @@ class VCruiseHelper:
       self.v_cruise_cluster_kph = V_CRUISE_UNSET
 
   def _update_v_cruise_non_pcm(self, CS, enabled, is_metric):
+    """
+    Updates the cruise speed for cars without PCM.
+
+    Args:
+      CS: The CarState object.
+      enabled: A boolean indicating whether openpilot is enabled.
+      is_metric: A boolean indicating whether to use metric units.
+    """
     # handle button presses. TODO: this should be in state_control, but a decelCruise press
     # would have the effect of both enabling and changing speed is checked after the state transition
     if not enabled:
@@ -112,6 +143,13 @@ class VCruiseHelper:
     self.v_cruise_kph = np.clip(round(self.v_cruise_kph, 1), V_CRUISE_MIN, V_CRUISE_MAX)
 
   def update_button_timers(self, CS, enabled):
+    """
+    Updates the timers for cruise control button presses.
+
+    Args:
+      CS: The CarState object.
+      enabled: A boolean indicating whether openpilot is enabled.
+    """
     # increment timer for buttons still pressed
     for k in self.button_timers:
       if self.button_timers[k] > 0:
@@ -124,6 +162,13 @@ class VCruiseHelper:
         self.button_change_states[b.type.raw] = {"standstill": CS.cruiseState.standstill, "enabled": enabled}
 
   def initialize_v_cruise(self, CS, experimental_mode: bool) -> None:
+    """
+    Initializes the cruise speed.
+
+    Args:
+      CS: The CarState object.
+      experimental_mode: A boolean indicating whether experimental mode is active.
+    """
     # initializing is handled by the PCM
     if self.CP.pcmCruise:
       return

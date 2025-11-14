@@ -30,6 +30,15 @@ carlog.addHandler(ForwardingHandler(cloudlog))
 
 
 def obd_callback(params: Params) -> ObdCallback:
+  """
+  Callback function for OBD multiplexing.
+
+  Args:
+    params: An instance of the Params class.
+
+  Returns:
+    A function that sets the OBD multiplexing state.
+  """
   def set_obd_multiplexing(obd_multiplexing: bool):
     if params.get_bool("ObdMultiplexingEnabled") != obd_multiplexing:
       cloudlog.warning(f"Setting OBD multiplexing to {obd_multiplexing}")
@@ -41,11 +50,25 @@ def obd_callback(params: Params) -> ObdCallback:
 
 
 def can_comm_callbacks(logcan: messaging.SubSocket, sendcan: messaging.PubSocket) -> tuple[CanRecvCallable, CanSendCallable]:
+  """
+  Creates callbacks for CAN communication.
+
+  Args:
+    logcan: The subscriber socket for CAN messages.
+    sendcan: The publisher socket for CAN messages.
+
+  Returns:
+    A tuple containing the CAN receive and send callbacks.
+  """
   def can_recv(wait_for_one: bool = False) -> list[list[CanData]]:
     """
-    wait_for_one: wait the normal logcan socket timeout for a CAN packet, may return empty list if nothing comes
+    Receives CAN messages from the logcan socket.
 
-    Returns: CAN packets comprised of CanData objects for easy access
+    Args:
+      wait_for_one: If True, waits for at least one CAN packet.
+
+    Returns:
+      A list of CAN packets, where each packet is a list of CanData objects.
     """
     ret = []
     for can in messaging.drain_sock(logcan, wait_for_one=wait_for_one):
@@ -53,17 +76,38 @@ def can_comm_callbacks(logcan: messaging.SubSocket, sendcan: messaging.PubSocket
     return ret
 
   def can_send(msgs: list[CanData]) -> None:
+    """
+    Sends CAN messages to the sendcan socket.
+
+    Args:
+      msgs: A list of CanData objects to be sent.
+    """
     sendcan.send(can_list_to_can_capnp(msgs, msgtype='sendcan'))
 
   return can_recv, can_send
 
 
 class Car:
+  """
+  The main car abstraction.
+
+  This class is responsible for interfacing with the car's CAN bus, updating the car
+  state, and sending control commands.
+  """
   CI: CarInterfaceBase
   RI: RadarInterfaceBase
   CP: car.CarParams
 
   def __init__(self, CI=None, RI=None) -> None:
+    """
+    Initializes the Car class.
+
+    Args:
+      CI: An optional CarInterfaceBase object. If not provided, it will be
+          auto-detected based on the car's fingerprint.
+      RI: An optional RadarInterfaceBase object. If not provided, it will be
+          created based on the car's fingerprint.
+    """
     self.can_sock = messaging.sub_sock('can', timeout=20)
     self.sm = messaging.SubMaster(['pandaStates', 'carControl', 'onroadEvents'])
     self.pm = messaging.PubMaster(['sendcan', 'carState', 'carParams', 'carOutput', 'liveTracks'])
@@ -160,8 +204,14 @@ class Car:
     self.rk = Ratekeeper(100, print_delay_threshold=None)
 
   def state_update(self) -> tuple[car.CarState, structs.RadarDataT | None]:
-    """carState update loop, driven by can"""
+    """
+    Updates the car state and radar data.
 
+    This method is driven by the car's CAN messages.
+
+    Returns:
+      A tuple containing the updated CarState and RadarData.
+    """
     can_strs = messaging.drain_sock_raw(self.can_sock, wait_for_one=True)
     can_list = can_capnp_to_list(can_strs)
 
@@ -196,8 +246,13 @@ class Car:
     return CS, RD
 
   def state_publish(self, CS: car.CarState, RD: structs.RadarDataT | None):
-    """carState and carParams publish loop"""
+    """
+    Publishes the car state, car params, and radar tracks.
 
+    Args:
+      CS: The current CarState.
+      RD: The current RadarData.
+    """
     # carParams - logged every 50 seconds (> 1 per segment)
     if self.sm.frame % int(50. / DT_CTRL) == 0:
       cp_send = messaging.new_message('carParams')
@@ -226,8 +281,15 @@ class Car:
       self.pm.send('liveTracks', tracks_msg)
 
   def controls_update(self, CS: car.CarState, CC: car.CarControl):
-    """control update loop, driven by carControl"""
+    """
+    Updates the car controls.
 
+    This method is driven by the `carControl` message.
+
+    Args:
+      CS: The current CarState.
+      CC: The current CarControl.
+    """
     if not self.initialized_prev:
       # Initialize CarInterface, once controls are ready
       # TODO: this can make us miss at least a few cycles when doing an ECU knockout
@@ -244,6 +306,11 @@ class Car:
       self.CC_prev = CC
 
   def step(self):
+    """
+    Performs a single step of the car loop.
+
+    This method updates the car state, publishes the state, and updates the controls.
+    """
     CS, RD = self.state_update()
 
     self.state_publish(CS, RD)
@@ -257,12 +324,23 @@ class Car:
     self.CS_prev = CS
 
   def params_thread(self, evt):
+    """
+    Periodically updates parameters from the params server.
+
+    Args:
+      evt: A threading.Event object to signal when to stop the thread.
+    """
     while not evt.is_set():
       self.is_metric = self.params.get_bool("IsMetric")
       self.experimental_mode = self.params.get_bool("ExperimentalMode") and self.CP.openpilotLongitudinalControl
       time.sleep(0.1)
 
   def card_thread(self):
+    """
+    The main thread for the car daemon.
+
+    This method starts the parameter update thread and runs the main step loop.
+    """
     e = threading.Event()
     t = threading.Thread(target=self.params_thread, args=(e, ))
     try:
@@ -276,6 +354,12 @@ class Car:
 
 
 def main():
+  """
+  Main function for the car daemon.
+
+  This function configures the process to run with high priority and starts the Car
+  instance.
+  """
   config_realtime_process(4, Priority.CTRL_HIGH)
   car = Car()
   car.card_thread()

@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+"""
+This file defines the services, their properties, and generates a C++ header file
+with the service definitions.
+
+The `SERVICE_LIST` dictionary contains the core information about each service,
+including whether it should be logged, its frequency, and its decimation factor for
+qlog. The `build_header` function generates a C++ header file with this
+information, which is used by other parts of the openpilot system.
+"""
 from typing import Optional
 
 

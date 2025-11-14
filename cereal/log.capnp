@@ -1,3 +1,7 @@
+# This file defines the main Cap'n Proto schema for openpilot. It includes
+# definitions for all the data structures used in the logging system and for
+# communication between different parts of the openpilot software.
+
 using Cxx = import "./include/c++.capnp";
 $Cxx.namespace("cereal");
 

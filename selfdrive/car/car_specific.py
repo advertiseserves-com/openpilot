@@ -13,10 +13,28 @@ NetworkLocation = structs.CarParams.NetworkLocation
 
 # TODO: the goal is to abstract this file into the CarState struct and make events generic
 class MockCarState:
+  """
+  A mock car state for testing purposes.
+
+  This class simulates the car's state based on GPS data, which is useful for
+  testing openpilot in simulation environments.
+  """
   def __init__(self):
+    """
+    Initializes the MockCarState class.
+    """
     self.sm = messaging.SubMaster(['gpsLocation', 'gpsLocationExternal'])
 
   def update(self, CS: car.CarState):
+    """
+    Updates the mock car state.
+
+    Args:
+      CS: The CarState object to be updated.
+
+    Returns:
+      The updated CarState object.
+    """
     self.sm.update(0)
     gps_sock = 'gpsLocationExternal' if self.sm.recv_frame['gpsLocationExternal'] > 1 else 'gpsLocation'
 
@@ -27,7 +45,19 @@ class MockCarState:
 
 
 class CarSpecificEvents:
+  """
+  Handles car-specific events and alerts.
+
+  This class generates events based on the car's state and control inputs,
+  which are then used to provide feedback to the driver.
+  """
   def __init__(self, CP: structs.CarParams):
+    """
+    Initializes the CarSpecificEvents class.
+
+    Args:
+      CP: The CarParams object for the current car.
+    """
     self.CP = CP
 
     self.steering_unpressed = 0
@@ -36,6 +66,17 @@ class CarSpecificEvents:
     self.silent_steer_warning = True
 
   def update(self, CS: car.CarState, CS_prev: car.CarState, CC: car.CarControl):
+    """
+    Updates the car-specific events.
+
+    Args:
+      CS: The current CarState.
+      CS_prev: The previous CarState.
+      CC: The current CarControl.
+
+    Returns:
+      An Events object containing the generated events.
+    """
     if self.CP.brand in ('body', 'mock'):
       events = Events()
 
@@ -131,6 +172,22 @@ class CarSpecificEvents:
 
   def create_common_events(self, CS: structs.CarState, CS_prev: car.CarState, extra_gears=None, pcm_enable=True,
                            allow_button_cancel=True):
+    """
+    Creates common events based on the car's state.
+
+    This method handles events that are common across most car brands, such as
+    door open, seatbelt unlatched, and wrong gear.
+
+    Args:
+      CS: The current CarState.
+      CS_prev: The previous CarState.
+      extra_gears: A list of extra gears to consider as valid.
+      pcm_enable: A boolean indicating whether PCM is enabled.
+      allow_button_cancel: A boolean indicating whether the cancel button is allowed.
+
+    Returns:
+      An Events object containing the common events.
+    """
     events = Events()
 
     if CS.doorOpen:
