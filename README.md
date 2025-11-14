@@ -22,6 +22,10 @@
 
 Quick start: `bash <(curl -fsSL openpilot.comma.ai)`
 
+## What is openpilot?
+
+openpilot is an open source, advanced driver-assistance system (ADAS). It enhances the driving experience by providing features like Adaptive Cruise Control (ACC), Lane Keeping Assist (LKA), and Forward Collision Warning (FCW). The system is designed to run on specific hardware, such as the comma 3X, and integrates with a wide range of supported vehicles.
+
 [![openpilot tests](https://github.com/commaai/openpilot/actions/workflows/selfdrive_tests.yaml/badge.svg)](https://github.com/commaai/openpilot/actions/workflows/selfdrive_tests.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![X Follow](https://img.shields.io/twitter/follow/comma_ai)](https://x.com/comma_ai)
@@ -62,11 +66,31 @@ To start developing openpilot
 
 openpilot is developed by [comma](https://comma.ai/) and by users like you. We welcome both pull requests and issues on [GitHub](http://github.com/commaai/openpilot).
 
-* Join the [community Discord](https://discord.comma.ai)
-* Check out [the contributing docs](docs/CONTRIBUTING.md)
-* Check out the [openpilot tools](tools/)
-* Code documentation lives at https://docs.comma.ai
-* Information about running openpilot lives on the [community wiki](https://github.com/commaai/openpilot/wiki)
+### Setup
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/commaai/openpilot.git
+   cd openpilot
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   ./tools/get_basedir.sh
+   ```
+
+3. **Build the code:**
+   ```bash
+   scons -j$(nproc)
+   ```
+
+### Resources
+
+* **Community Discord:** Join the [community Discord](https://discord.comma.ai) to connect with other developers and users.
+* **Contributing Docs:** Check out [the contributing docs](docs/CONTRIBUTING.md) for guidelines on how to contribute to the project.
+* **openpilot tools:** Explore the [openpilot tools](tools/) to help with development and debugging.
+* **Code Documentation:** The code documentation lives at https://docs.comma.ai.
+* **Community Wiki:** Information about running openpilot lives on the [community wiki](https://github.com/commaai/openpilot/wiki).
 
 Want to get paid to work on openpilot? [comma is hiring](https://comma.ai/jobs#open-positions) and offers lots of [bounties](https://comma.ai/bounties) for external contributors.
 

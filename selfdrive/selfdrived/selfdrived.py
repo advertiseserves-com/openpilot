@@ -42,7 +42,19 @@ IGNORED_SAFETY_MODES = (SafetyModel.silent, SafetyModel.noOutput)
 
 
 class SelfdriveD:
+  """
+  Main daemon for openpilot's self-driving functionality.
+
+  This class manages the state of the self-driving system, processing sensor data,
+  and publishing the `selfdriveState` and `onroadEvents` messages.
+  """
   def __init__(self, CP=None):
+    """
+    Initializes the SelfdriveD class.
+
+    Args:
+      CP: An optional CarParams object. If not provided, it will be fetched from params.
+    """
     self.params = Params()
 
     # Ensure the current branch is cached, otherwise the first cycle lags
@@ -137,8 +149,15 @@ class SelfdriveD:
       self.events.add(EventName.dashcamMode, static=True)
 
   def update_events(self, CS):
-    """Compute onroadEvents from carState"""
+    """
+    Computes and manages onroad events based on the car's state.
 
+    This method gathers events from various sources like calibrations,
+    driver monitoring, and vehicle state, then populates the events list.
+
+    Args:
+      CS: The CarState object containing the current state of the car.
+    """
     self.events.clear()
 
     if self.sm['controlsState'].lateralControlState.which() == 'debugState':
@@ -399,6 +418,14 @@ class SelfdriveD:
         self.events.add(EventName.personalityChanged)
 
   def data_sample(self):
+    """
+    Samples data from the car state and other sources.
+
+    This method fetches the latest `carState` and updates the subscription manager.
+
+    Returns:
+      The current CarState object.
+    """
     _car_state = messaging.recv_one(self.car_state_sock)
     CS = _car_state.carState if _car_state else self.CS_prev
 
@@ -446,6 +473,12 @@ class SelfdriveD:
     return CS
 
   def update_alerts(self, CS):
+    """
+    Updates the alert manager with new alerts and processes them.
+
+    Args:
+      CS: The CarState object.
+    """
     clear_event_types = set()
     if ET.WARNING not in self.state_machine.current_alert_types:
       clear_event_types.add(ET.WARNING)
@@ -459,6 +492,12 @@ class SelfdriveD:
     self.AM.process_alerts(self.sm.frame, clear_event_types)
 
   def publish_selfdriveState(self, CS):
+    """
+    Publishes the `selfdriveState` and `onroadEvents` messages.
+
+    Args:
+      CS: The CarState object.
+    """
     # selfdriveState
     ss_msg = messaging.new_message('selfdriveState')
     ss_msg.valid = True
@@ -489,6 +528,12 @@ class SelfdriveD:
     self.events_prev = self.events.names.copy()
 
   def step(self):
+    """
+    Executes a single step of the self-driving loop.
+
+    This method samples data, updates events, updates the state machine,
+    updates alerts, and publishes the self-driving state.
+    """
     CS = self.data_sample()
     self.update_events(CS)
     if not self.CP.passive and self.initialized:
@@ -500,6 +545,12 @@ class SelfdriveD:
     self.CS_prev = CS
 
   def params_thread(self, evt):
+    """
+    Periodically updates parameters from the params server.
+
+    Args:
+      evt: A threading.Event object to signal when to stop the thread.
+    """
     while not evt.is_set():
       self.is_metric = self.params.get_bool("IsMetric")
       self.is_ldw_enabled = self.params.get_bool("IsLdwEnabled")
@@ -509,6 +560,11 @@ class SelfdriveD:
       time.sleep(0.1)
 
   def run(self):
+    """
+    Main loop for the self-driving daemon.
+
+    This method starts the parameter update thread and runs the main step loop.
+    """
     e = threading.Event()
     t = threading.Thread(target=self.params_thread, args=(e, ))
     try:
@@ -522,6 +578,12 @@ class SelfdriveD:
 
 
 def main():
+  """
+  Main function for the selfdrived daemon.
+
+  This function configures the process to run with high priority and starts the
+  SelfdriveD instance.
+  """
   config_realtime_process(4, Priority.CTRL_HIGH)
   s = SelfdriveD()
   s.run()
